@@ -17,6 +17,16 @@ import {
   Checkbox,
   InputAdornment,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  Menu,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import {
@@ -27,6 +37,8 @@ import {
   MoreHorizontal,
   Calendar,
   ExternalLink,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 
 const OrderCard = styled(Box, {
@@ -93,6 +105,16 @@ const UserContainer = styled(Box)({
   gap: 8,
 });
 
+const SortableHeader = styled(Box)(({ theme }) => ({
+  display: "flex",
+  alignItems: "center",
+  cursor: "pointer",
+  gap: 4,
+  "&:hover": {
+    color: theme.palette.primary.main,
+  },
+}));
+
 const StatusChip = styled(Chip)(({ theme, status }) => {
   const getStatusColors = (status) => {
     switch (status) {
@@ -158,7 +180,7 @@ const PaginationContainer = styled(Box)(({ theme }) => ({
   borderTop: `1px solid ${theme.palette.divider}`,
 }));
 
-const ordersData = [
+const initialOrdersData = [
   {
     id: "#CM9801",
     user: { name: "Natali Craig", avatar: "/api/placeholder/32/32" },
@@ -235,28 +257,75 @@ const ordersData = [
 
 const OrderList = ({ highlight = false }) => {
   const theme = useTheme();
+  const [ordersData, setOrdersData] = useState(initialOrdersData);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortField, setSortField] = useState("");
+  const [sortDirection, setSortDirection] = useState("asc");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [openAddDialog, setOpenAddDialog] = useState(false);
+  const [filterAnchorEl, setFilterAnchorEl] = useState(null);
+  const [newOrder, setNewOrder] = useState({
+    user: { name: "", avatar: "/api/placeholder/32/32" },
+    project: "",
+    address: "",
+    status: "Pending",
+  });
   const itemsPerPage = 5;
 
-  const filteredOrders = useMemo(() => {
-    return ordersData.filter(
+  const filteredAndSortedOrders = useMemo(() => {
+    let filtered = ordersData.filter(
       (order) =>
-        order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.project.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.status.toLowerCase().includes(searchTerm.toLowerCase())
+        (statusFilter === "all" || order.status === statusFilter) &&
+        (order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          order.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          order.project.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          order.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          order.status.toLowerCase().includes(searchTerm.toLowerCase()))
     );
-  }, [searchTerm]);
+
+    if (sortField) {
+      filtered = [...filtered].sort((a, b) => {
+        let aValue, bValue;
+
+        if (sortField === "user") {
+          aValue = a.user.name.toLowerCase();
+          bValue = b.user.name.toLowerCase();
+        } else if (sortField === "id") {
+          aValue = a.id.toLowerCase();
+          bValue = b.id.toLowerCase();
+        } else {
+          aValue = a[sortField].toLowerCase();
+          bValue = b[sortField].toLowerCase();
+        }
+
+        if (sortDirection === "asc") {
+          return aValue > bValue ? 1 : -1;
+        } else {
+          return aValue < bValue ? 1 : -1;
+        }
+      });
+    }
+
+    return filtered;
+  }, [ordersData, searchTerm, statusFilter, sortField, sortDirection]);
 
   const paginatedOrders = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredOrders.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredOrders, currentPage]);
+    return filteredAndSortedOrders.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredAndSortedOrders, currentPage]);
 
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredAndSortedOrders.length / itemsPerPage);
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
 
   const handleSelectOrder = (orderId) => {
     setSelectedOrders((prev) =>
@@ -284,6 +353,47 @@ const OrderList = ({ highlight = false }) => {
     setSelectedOrders([]);
   };
 
+  const handleAddOrder = () => {
+    const orderCount = ordersData.length + 1;
+    const newId = `#CM${9800 + orderCount}`;
+
+    const orderToAdd = {
+      id: newId,
+      user: { ...newOrder.user },
+      project: newOrder.project,
+      address: newOrder.address,
+      date: "Just now",
+      status: newOrder.status,
+      selected: false,
+    };
+
+    setOrdersData([orderToAdd, ...ordersData]);
+    setOpenAddDialog(false);
+    setNewOrder({
+      user: { name: "", avatar: "/api/placeholder/32/32" },
+      project: "",
+      address: "",
+      status: "Pending",
+    });
+  };
+
+  const handleFilterClick = (event) => {
+    setFilterAnchorEl(event.currentTarget);
+  };
+
+  const handleFilterClose = () => {
+    setFilterAnchorEl(null);
+  };
+
+  const getSortIcon = (field) => {
+    if (sortField !== field) return <ArrowUpDown size={14} />;
+    return sortDirection === "asc" ? (
+      <ArrowUp size={14} />
+    ) : (
+      <ArrowDown size={14} />
+    );
+  };
+
   return (
     <OrderCard highlight={highlight ? 1 : 0}>
       <HeaderContainer>
@@ -300,18 +410,13 @@ const OrderList = ({ highlight = false }) => {
 
         <ActionButtonsContainer>
           <Tooltip title="Add Order">
-            <IconButton size="small">
+            <IconButton size="small" onClick={() => setOpenAddDialog(true)}>
               <Plus size={18} />
             </IconButton>
           </Tooltip>
           <Tooltip title="Filter">
-            <IconButton size="small">
+            <IconButton size="small" onClick={handleFilterClick}>
               <Filter size={18} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Sort">
-            <IconButton size="small">
-              <ArrowUpDown size={18} />
             </IconButton>
           </Tooltip>
         </ActionButtonsContainer>
@@ -357,12 +462,37 @@ const OrderList = ({ highlight = false }) => {
                   size="small"
                 />
               </TableCell>
-              <TableCell>Order ID</TableCell>
-              <TableCell>User</TableCell>
-              <TableCell>Project</TableCell>
-              <TableCell>Address</TableCell>
+              <TableCell>
+                <SortableHeader onClick={() => handleSort("id")}>
+                  Order ID
+                  {getSortIcon("id")}
+                </SortableHeader>
+              </TableCell>
+              <TableCell>
+                <SortableHeader onClick={() => handleSort("user")}>
+                  User
+                  {getSortIcon("user")}
+                </SortableHeader>
+              </TableCell>
+              <TableCell>
+                <SortableHeader onClick={() => handleSort("project")}>
+                  Project
+                  {getSortIcon("project")}
+                </SortableHeader>
+              </TableCell>
+              <TableCell>
+                <SortableHeader onClick={() => handleSort("address")}>
+                  Address
+                  {getSortIcon("address")}
+                </SortableHeader>
+              </TableCell>
               <TableCell>Date</TableCell>
-              <TableCell>Status</TableCell>
+              <TableCell>
+                <SortableHeader onClick={() => handleSort("status")}>
+                  Status
+                  {getSortIcon("status")}
+                </SortableHeader>
+              </TableCell>
               <TableCell></TableCell>
             </TableRow>
           </StyledTableHead>
@@ -481,6 +611,130 @@ const OrderList = ({ highlight = false }) => {
           />
         </PaginationContainer>
       )}
+
+      <Menu
+        anchorEl={filterAnchorEl}
+        open={Boolean(filterAnchorEl)}
+        onClose={handleFilterClose}
+      >
+        <MenuItem
+          onClick={() => {
+            setStatusFilter("all");
+            handleFilterClose();
+          }}
+        >
+          All Status
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            setStatusFilter("Complete");
+            handleFilterClose();
+          }}
+        >
+          Complete
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            setStatusFilter("In Progress");
+            handleFilterClose();
+          }}
+        >
+          In Progress
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            setStatusFilter("Pending");
+            handleFilterClose();
+          }}
+        >
+          Pending
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            setStatusFilter("Approved");
+            handleFilterClose();
+          }}
+        >
+          Approved
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            setStatusFilter("Rejected");
+            handleFilterClose();
+          }}
+        >
+          Rejected
+        </MenuItem>
+      </Menu>
+
+      <Dialog
+        open={openAddDialog}
+        onClose={() => setOpenAddDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Add New Order</DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <TextField
+            fullWidth
+            label="User Name"
+            value={newOrder.user.name}
+            onChange={(e) =>
+              setNewOrder({
+                ...newOrder,
+                user: { ...newOrder.user, name: e.target.value },
+              })
+            }
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="Project"
+            value={newOrder.project}
+            onChange={(e) =>
+              setNewOrder({ ...newOrder, project: e.target.value })
+            }
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="Address"
+            value={newOrder.address}
+            onChange={(e) =>
+              setNewOrder({ ...newOrder, address: e.target.value })
+            }
+            sx={{ mb: 2 }}
+          />
+          <FormControl fullWidth>
+            <InputLabel>Status</InputLabel>
+            <Select
+              value={newOrder.status}
+              label="Status"
+              onChange={(e) =>
+                setNewOrder({ ...newOrder, status: e.target.value })
+              }
+            >
+              <MenuItem value="Pending">Pending</MenuItem>
+              <MenuItem value="In Progress">In Progress</MenuItem>
+              <MenuItem value="Complete">Complete</MenuItem>
+              <MenuItem value="Approved">Approved</MenuItem>
+              <MenuItem value="Rejected">Rejected</MenuItem>
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenAddDialog(false)}>Cancel</Button>
+          <Button
+            onClick={handleAddOrder}
+            variant="contained"
+            disabled={
+              !newOrder.user.name || !newOrder.project || !newOrder.address
+            }
+          >
+            Add Order
+          </Button>
+        </DialogActions>
+      </Dialog>
     </OrderCard>
   );
 };
