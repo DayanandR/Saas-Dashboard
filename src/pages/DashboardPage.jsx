@@ -25,55 +25,42 @@ const DashboardPage = () => {
       </Box>
 
       <Grid container spacing={3}>
+        {/* First Row */}
         <Grid item xs={12} lg={8}>
           <Box sx={{ height: "100%", display: "flex" }}>
             <StatsGrid />
           </Box>
         </Grid>
-
         <Grid item xs={12} lg={4}>
           <Box sx={{ height: "100%", display: "flex" }}>
             <ProjectionsVsActualsChart />
           </Box>
         </Grid>
 
+        {/* Second Row */}
         <Grid item xs={12} lg={8}>
           <Box sx={{ height: { xs: 350, lg: "100%" }, display: "flex" }}>
             <RevenueChart />
           </Box>
         </Grid>
-
         <Grid item xs={12} lg={4}>
           <Box sx={{ height: { xs: 350, lg: "100%" }, display: "flex" }}>
             <RevenueByLocation />
           </Box>
         </Grid>
+
+        {/* Third Row - Fixed Layout */}
+        <Grid item xs={12} lg={8}>
+          <Box sx={{ height: { xs: 400, lg: "100%" }, display: "flex" }}>
+            <TopSellingProducts />
+          </Box>
+        </Grid>
+        <Grid item xs={12} lg={4}>
+          <Box sx={{ height: { xs: 400, lg: "100%" }, display: "flex" }}>
+            <TotalSales />
+          </Box>
+        </Grid>
       </Grid>
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: { xs: "column", lg: "row" },
-          gap: 2,
-          my: 2,
-        }}
-      >
-        <Box
-          sx={{
-            flex: { xs: "1", lg: "2" },
-            minHeight: "400px",
-          }}
-        >
-          <TopSellingProducts />
-        </Box>
-        <Box
-          sx={{
-            flex: { xs: "1", lg: "1" },
-            minHeight: "400px",
-          }}
-        >
-          <TotalSales />
-        </Box>
-      </Box>
     </Box>
   );
 };
