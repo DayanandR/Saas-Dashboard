@@ -7,7 +7,6 @@ import {
   Box,
   useMediaQuery,
   useTheme,
-  Drawer,
 } from "@mui/material";
 import { store } from "./redux/store";
 import { initializeTheme, selectThemeMode } from "./redux/slices/themeSlice";
@@ -19,7 +18,7 @@ import DashboardPage from "./pages/DashboardPage";
 import { lightTheme, darkTheme } from "./config/theme";
 import { useSelector, useDispatch } from "react-redux";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import ProjectsPage from "./pages/ProjectsPage";
+import OrdersPage from "./pages/OrdersPage";
 
 const MainLayout = ({ children }) => {
   const theme = useTheme();
@@ -113,10 +112,10 @@ const ThemedApp = () => {
             }
           />
           <Route
-            path="/projects"
+            path="/orders"
             element={
               <MainLayout>
-                <ProjectsPage />
+                <OrdersPage />
               </MainLayout>
             }
           />

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -204,6 +204,33 @@ const ordersData = [
     status: "Rejected",
     selected: false,
   },
+  {
+    id: "#CM9806",
+    user: { name: "John Smith", avatar: "/api/placeholder/32/32" },
+    project: "E-commerce Site",
+    address: "Main Street Boston",
+    date: "Feb 1, 2023",
+    status: "Complete",
+    selected: false,
+  },
+  {
+    id: "#CM9807",
+    user: { name: "Sarah Wilson", avatar: "/api/placeholder/32/32" },
+    project: "Mobile App",
+    address: "Oak Avenue Chicago",
+    date: "Jan 30, 2023",
+    status: "In Progress",
+    selected: false,
+  },
+  {
+    id: "#CM9808",
+    user: { name: "Mike Johnson", avatar: "/api/placeholder/32/32" },
+    project: "Portfolio Site",
+    address: "Pine Street Seattle",
+    date: "Jan 28, 2023",
+    status: "Pending",
+    selected: false,
+  },
 ];
 
 const OrderList = ({ highlight = false }) => {
@@ -211,6 +238,25 @@ const OrderList = ({ highlight = false }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  const filteredOrders = useMemo(() => {
+    return ordersData.filter(
+      (order) =>
+        order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.project.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.status.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [searchTerm]);
+
+  const paginatedOrders = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredOrders.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredOrders, currentPage]);
+
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
 
   const handleSelectOrder = (orderId) => {
     setSelectedOrders((prev) =>
@@ -222,10 +268,20 @@ const OrderList = ({ highlight = false }) => {
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelectedOrders(ordersData.map((order) => order.id));
+      setSelectedOrders(paginatedOrders.map((order) => order.id));
     } else {
       setSelectedOrders([]);
     }
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (event, page) => {
+    setCurrentPage(page);
+    setSelectedOrders([]);
   };
 
   return (
@@ -265,9 +321,9 @@ const OrderList = ({ highlight = false }) => {
         <TextField
           fullWidth
           size="small"
-          placeholder="Search"
+          placeholder="Search by ID, user, project, address, or status"
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={handleSearchChange}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -291,9 +347,12 @@ const OrderList = ({ highlight = false }) => {
                 <Checkbox
                   indeterminate={
                     selectedOrders.length > 0 &&
-                    selectedOrders.length < ordersData.length
+                    selectedOrders.length < paginatedOrders.length
                   }
-                  checked={selectedOrders.length === ordersData.length}
+                  checked={
+                    paginatedOrders.length > 0 &&
+                    selectedOrders.length === paginatedOrders.length
+                  }
                   onChange={handleSelectAll}
                   size="small"
                 />
@@ -308,7 +367,7 @@ const OrderList = ({ highlight = false }) => {
             </TableRow>
           </StyledTableHead>
           <TableBody>
-            {ordersData.map((order) => (
+            {paginatedOrders.map((order) => (
               <StyledTableRow key={order.id}>
                 <TableCell padding="checkbox">
                   <Checkbox
@@ -410,16 +469,18 @@ const OrderList = ({ highlight = false }) => {
         </Table>
       </TableContainer>
 
-      <PaginationContainer>
-        <Pagination
-          count={5}
-          page={currentPage}
-          onChange={(event, page) => setCurrentPage(page)}
-          size="small"
-          showFirstButton
-          showLastButton
-        />
-      </PaginationContainer>
+      {totalPages > 1 && (
+        <PaginationContainer>
+          <Pagination
+            count={totalPages}
+            page={currentPage}
+            onChange={handlePageChange}
+            size="small"
+            showFirstButton
+            showLastButton
+          />
+        </PaginationContainer>
+      )}
     </OrderCard>
   );
 };

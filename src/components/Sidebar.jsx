@@ -34,7 +34,7 @@ const MINI_SIDEBAR_WIDTH = 65;
 const navigationConfig = {
   favorites: [
     { id: "overview", label: "Overview", path: "/overview" },
-    { id: "projects", label: "Projects", path: "/projects" },
+    { id: "orders", label: "Orders", path: "/orders" },
   ],
   dashboards: [
     { id: "default", label: "Default", icon: PieChart, path: "/dashboard" },
@@ -46,9 +46,9 @@ const navigationConfig = {
     },
     {
       id: "projects-dash",
-      label: "Projects",
+      label: "Orders",
       icon: Folder,
-      path: "/dashboard/projects",
+      path: "/orders",
     },
     {
       id: "courses",
